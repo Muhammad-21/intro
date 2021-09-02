@@ -30,14 +30,17 @@ function sendJSON(response,body) {
 
 function searchPost(postId) {
     let post = '';
-    for(let i=0;i<posts.length;i++){
-        if(posts[i].id == postId){
+    for (let i=0;i<posts.length;i++){
+        if (posts[i].id === postId){
             post = posts[i];
         }
     }
     return post;
 }
 
+function editPost(postId,postContent) {
+    
+}
 const methods = new Map();
 methods.set('/posts.get',function ({response}){
     sendJSON(response,posts);
@@ -74,8 +77,23 @@ methods.set('/posts.post',function ({response,searchParams}){
     sendJSON(response,post);
 });
 
-methods.set('/posts.edit',function (request,response){});
-methods.set('/posts.delete',function (request,response){});
+methods.set('/posts.edit',function ({response,searchParams}){
+    if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id'))) || !searchParams.has('content')){
+        sendResponse(response,{status:statusBadRequest});
+        return;
+    }
+    const id = Number(searchParams.get('id'));
+    const content = searchParams.get('content');
+    const post = searchPost(id);
+    if (post === ''){
+        sendResponse(response,{status:statusNotFound});
+        return;
+    }
+    post.content = content;
+    sendJSON(response,post);
+});
+
+// methods.set('/posts.delete',function (request,response){});
 
 const server = http.createServer(function (request,response) {
     const {pathname,searchParams} = new URL(request.url,`http://${request.headers.host}`);
