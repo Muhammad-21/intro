@@ -28,12 +28,34 @@ function sendJSON(response,body) {
     });
 }
 
+function searchPost(postId) {
+    let post = '';
+    for(let i=0;i<posts.length;i++){
+        if(posts[i].id == postId){
+            post = posts[i];
+        }
+    }
+    return post;
+}
+
 const methods = new Map();
 methods.set('/posts.get',function ({response}){
     sendJSON(response,posts);
 });
 
-methods.set('/posts.getById',function (request,response){});
+methods.set('/posts.getById',function ({response,searchParams}){
+    if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id')))){
+        sendResponse(response,{status:statusBadRequest});
+        return;
+    }
+    const id = Number(searchParams.get('id'));
+    const post = searchPost(id);
+    if (post === ''){
+        sendResponse(response,{status:statusNotFound});
+        return;
+    }
+    sendJSON(response,post);
+});
 
 methods.set('/posts.post',function ({response,searchParams}){
     if (!searchParams.has('content')){
