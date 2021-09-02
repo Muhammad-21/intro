@@ -18,10 +18,7 @@ methods.set('/posts.get',function (request,response){
 
 methods.set('/posts.getById',function (request,response){});
 
-methods.set('/posts.post',function (request,response){
-    const url = new URL(request.url,`http://${request.headers.host}`);
-    const searchParams = url.searchParams;
-
+methods.set('/posts.post',function (response,searchParams){
     if (!searchParams.has('content')){
         response.writeHead(statusBadRequest);
         response.end();
@@ -44,8 +41,8 @@ methods.set('/posts.edit',function (request,response){});
 methods.set('/posts.delete',function (request,response){});
 
 const server = http.createServer(function (request,response) {
-    const url = new URL(request.url,`http://${request.headers.host}`);
-    const pathname = url.pathname;
+    const {pathname,searchParams} = new URL(request.url,`http://${request.headers.host}`);
+
     const method = methods.get(pathname);
     if (method === undefined){
         response.writeHead(statusNotFound);
@@ -53,7 +50,14 @@ const server = http.createServer(function (request,response) {
         return;
     }
 
-    method(request,response);
+    const params = {
+        request,
+        response,
+        pathname,
+        searchParams,
+    };
+
+    method(params);
 });
 
 server.listen(port);
