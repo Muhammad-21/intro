@@ -31,7 +31,7 @@ function sendJSON(response,body) {
 function searchPost(postId) {
     let post = '';
     for (let i=0;i<posts.length;i++){
-        if (posts[i].id === postId){
+        if (posts[i].id === postId && posts[i].removed === false){
             post = posts[i];
         }
     }
@@ -40,7 +40,8 @@ function searchPost(postId) {
 
 const methods = new Map();
 methods.set('/posts.get',function ({response}){
-    sendJSON(response,posts);
+    const filterPosts = posts.filter(el => el.removed === false);
+    sendJSON(response,filterPosts);
 });
 
 methods.set('/posts.getById',function ({response,searchParams}){
@@ -69,10 +70,12 @@ methods.set('/posts.post',function ({response,searchParams}){
         id: nextId++,
         content:content,
         created:Date.now(),
+        removed:false,
     };
     posts.unshift(post);
     sendJSON(response,post);
 });
+
 
 methods.set('/posts.edit',function ({response,searchParams}){
     if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id'))) || !searchParams.has('content')){
@@ -90,21 +93,43 @@ methods.set('/posts.edit',function ({response,searchParams}){
     sendJSON(response,post);
 });
 
+
 methods.set('/posts.delete',function ({response,searchParams}){
     if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id')))){
         sendResponse(response,{status:statusBadRequest});
         return;
     }
     const id = Number(searchParams.get('id'));
-    let index = posts.findIndex(el => el.id === id);
+    const index = posts.findIndex(el => el.id === id && el.removed === false);
     if (index === -1){
         sendResponse(response,{status:statusNotFound});
         return;
     }
     const post = posts[index];
-    posts.splice(index,1);
+    posts[index].removed = true;
     sendJSON(response,post);
 });
+
+methods.set('/posts.restore',function ({response,searchParams}){
+    if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id')))){
+        sendResponse(response,{status:statusBadRequest});
+        return;
+    }
+    const id = Number(searchParams.get('id'));
+    const index = posts.findIndex(el => el.id === id);
+    if (index === -1){
+        sendResponse(response,{status:statusNotFound});
+        return;
+    }
+    const post = posts[index];
+    if (post.removed === false){
+        sendResponse(response,{status:statusBadRequest});
+        return;
+    }
+    posts[index].removed = false;
+    sendJSON(response,post);
+});
+
 
 const server = http.createServer(function (request,response) {
     const {pathname,searchParams} = new URL(request.url,`http://${request.headers.host}`);
