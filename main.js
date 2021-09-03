@@ -38,9 +38,6 @@ function searchPost(postId) {
     return post;
 }
 
-function editPost(postId,postContent) {
-    
-}
 const methods = new Map();
 methods.set('/posts.get',function ({response}){
     sendJSON(response,posts);
@@ -93,7 +90,21 @@ methods.set('/posts.edit',function ({response,searchParams}){
     sendJSON(response,post);
 });
 
-// methods.set('/posts.delete',function (request,response){});
+methods.set('/posts.delete',function ({response,searchParams}){
+    if (!searchParams.has('id') || Number.isNaN(Number(searchParams.get('id')))){
+        sendResponse(response,{status:statusBadRequest});
+        return;
+    }
+    const id = Number(searchParams.get('id'));
+    let index = posts.findIndex(el => el.id === id);
+    if (index === -1){
+        sendResponse(response,{status:statusNotFound});
+        return;
+    }
+    const post = posts[index];
+    posts.splice(index,1);
+    sendJSON(response,post);
+});
 
 const server = http.createServer(function (request,response) {
     const {pathname,searchParams} = new URL(request.url,`http://${request.headers.host}`);
